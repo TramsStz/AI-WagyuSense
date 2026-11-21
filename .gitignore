@@ -39,6 +39,7 @@ live_captures/
 # Intermediate / Heavy Models & Training Artifacts
 yolo11n.pt
 *.onnx
+!weights/*.onnx
 *.engine
 AI-Model/model2-efficientnet/*.pth
 AI-Model/model2-efficientnet/*.onnx
