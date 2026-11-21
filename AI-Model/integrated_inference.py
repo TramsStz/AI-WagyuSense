@@ -205,7 +205,7 @@ class AIWagyuSensePipeline:
             "color_desc": color_desc
         }
 
-    def process_image(self, img_bgr):
+    def process_image(self, img_bgr, fast_mode=False):
         h, w = img_bgr.shape[:2]
         
         # =============================================================
@@ -238,6 +238,50 @@ class AIWagyuSensePipeline:
         if muscle_px == 0:
             return None, "Invalid muscle mask"
             
+        # FAST STREAMING MODE (Optimized for Live Camera on Jetson)
+        # Skips heavy Telea inpainting and 1600x900 dashboard rendering for real-time 30+ FPS HUD
+        if fast_mode:
+            green = img_bgr[:, :, 1]
+            roi_pixels = green[muscle_mask == 255]
+            if len(roi_pixels) > 0:
+                otsu_th, _ = cv2.threshold(roi_pixels, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                safe_th = max(int(otsu_th), 140)
+                _, fat_mask = cv2.threshold(green, safe_th, 255, cv2.THRESH_BINARY)
+                fat_mask = cv2.bitwise_and(fat_mask, fat_mask, mask=muscle_mask)
+                fat_px = int(np.count_nonzero(fat_mask))
+                otsu_imf = (fat_px / muscle_px) * 100.0
+            else:
+                otsu_imf = 0.0
+                fat_mask = np.zeros_like(muscle_mask)
+                fat_px = 0
+                safe_th = 140
+                
+            tas_grade, grade_desc = self.compute_deterministic_tas_grade(otsu_imf)
+            t_end = time.perf_counter()
+            
+            return None, {
+                "tas_grade": tas_grade,
+                "grade_desc": grade_desc,
+                "otsu_imf_percent": otsu_imf,
+                "particle_count": 0,
+                "fineness_density": 0.0,
+                "spatial_sd": 0.0,
+                "spatial_cov": 0.0,
+                "uniformity_rating": "Live Stream",
+                "seg_confidence": seg_conf,
+                "threshold_used": safe_th,
+                "muscle_pixels": muscle_px,
+                "fat_pixels": fat_px,
+                "glare_pixels": 0,
+                "polygon": polygon,
+                "fat_mask": fat_mask,
+                "muscle_mask": muscle_mask,
+                "latency_breakdown_ms": {
+                    "segmentation": seg_lat_ms,
+                    "total": (t_end - t0) * 1000.0
+                }
+            }
+
         isolated = cv2.bitwise_and(img_bgr, img_bgr, mask=muscle_mask)
         
         # Glare Inpainting (Tightened S<20, V>235 + Dilation + Telea)
