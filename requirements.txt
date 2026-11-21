@@ -1,0 +1,8 @@
+# AI-WagyuSense Python Dependencies
+# For PC (Windows / Linux x86_64) & NVIDIA Jetson Orin Nano (JetPack 5.x / 6.x)
+
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=9.5.0
+torchvision

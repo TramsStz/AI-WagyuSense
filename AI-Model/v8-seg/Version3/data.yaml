@@ -1,0 +1,14 @@
+path: C:/Users/PC/OneDrive/Attachments/Desktop/Work 555/AI-Wagyu/AI-Model/v8-seg/Version3
+train: train/images
+val: valid/images
+test: test/images
+
+nc: 1
+names: ['meat_roi']
+
+roboflow:
+  workspace: aiwagyusense
+  project: ai-wagyusense
+  version: 3
+  license: Private
+  url: https://app.roboflow.com/aiwagyusense/ai-wagyusense/3
